@@ -1,0 +1,32 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'us-east1-docker.pkg.dev/sylvan-presence-437615-e6/k8-assignment-artifact-registry/container2:latest',
+        '.',
+      ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push',
+        'us-east1-docker.pkg.dev/sylvan-presence-437615-e6/k8-assignment-artifact-registry/container2:latest',
+      ]
+
+  - name: 'gcr.io/cloud-builders/kubectl'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud container clusters get-credentials malav-k8-assignment-cluster --zone us-central1-c
+        kubectl apply -f pvc.yaml
+        kubectl apply -f deployment.yaml
+        kubectl apply -f service.yaml
+
+images:
+  - 'us-east1-docker.pkg.dev/sylvan-presence-437615-e6/k8-assignment-artifact-registry/container2:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
