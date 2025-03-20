@@ -11,7 +11,7 @@ def process_file():
 
     try:
         with open(file_path, 'r', newline='') as file:
-            # Attempt to read the file using csv.reader1
+            # Attempt to read the file using csv.reader
             reader = csv.reader(file)
             rows = list(reader)
             if len(rows) < 2:
