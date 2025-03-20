@@ -1,45 +1,56 @@
 from flask import Flask, request, jsonify
+import os
 import csv
 
 app = Flask(__name__)
 
-@app.route('/process', methods=['POST'])
-def process_file():
+# Persistent storage directory path
+STORAGE_DIR = "/malav_PV_dir"
+
+@app.route('/sum', methods=['POST'])
+def calculate_sum():
     data = request.get_json()
-    file_path = f"/malav_PV_dir/{data['file']}"
+
+    if not data or 'file' not in data or not data['file'] or 'product' not in data or not data['product']:
+        return jsonify({"file": None, "error": "Invalid JSON input."}), 400
+
+    file_name = data['file']
     product = data['product']
+    file_path = os.path.join(STORAGE_DIR, file_name)
 
     try:
+        if not os.path.isfile(file_path):
+            return jsonify({"file": file_name, "error": "File not found."}), 404
+
         with open(file_path, 'r', newline='') as file:
-            # Attempt to read the file using csv.reader
             reader = csv.reader(file)
             rows = list(reader)
-            if len(rows) < 2:
-                return jsonify({"file": data['file'], "error": "Input file not in CSV format."}), 400
 
-            # Extract headers and validate column names (remove any leading/trailing spaces)
-            headers = [header.strip() for header in rows[0]]
-            if headers != ["product", "amount"]:
-                return jsonify({"file": data['file'], "error": "Input file not in CSV format."}), 400
+        if len(rows) < 2:
+            return jsonify({"file": file_name, "error": "Input file not in CSV format."}), 400
 
-            total_sum = 0
-            for row in rows[1:]:
-                if len(row) != 2:  
-                    return jsonify({"file": data['file'], "error": "Input file not in CSV format."}), 400
+        headers = [h.strip().lower() for h in rows[0]]
+        if headers != ["product", "amount"]:
+            return jsonify({"file": file_name, "error": "Input file not in CSV format."}), 400
 
-                try:
-                    row_product, row_amount = row
-                    if row_product == product:
-                        total_sum += int(row_amount)
-                except ValueError as e:  
-                    return jsonify({"file": data['file'], "error": "Input file not in CSV format."}), 400
+        total_sum = 0
+        for row in rows[1:]:
+            if len(row) != 2:
+                return jsonify({"file": file_name, "error": "Input file not in CSV format."}), 400
 
-        return jsonify({"file": data['file'], "sum": total_sum})
+            try:
+                product_name = row[0].strip()
+                amount = float(row[1].strip())
 
-    except FileNotFoundError as e:
-        return jsonify({"file": data['file'], "error": "File not found."}), 404
+                if product_name.lower() == product.lower():
+                    total_sum += amount
+            except ValueError:
+                return jsonify({"file": file_name, "error": "Input file not in CSV format."}), 400
+
+        return jsonify({"file": file_name, "sum": int(total_sum)}), 200
+
     except Exception as e:
-        return jsonify({"file": data['file'], "error": "Input file not in CSV format."}), 400
+        return jsonify({"file": file_name, "error": "An unexpected error occurred."}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=7000)
+    app.run(host='0.0.0.0', port=7000, debug=True)
