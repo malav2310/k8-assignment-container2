@@ -1,1 +1,1 @@
-# k8-assignment-container2.
+# k8-assignment-container2
